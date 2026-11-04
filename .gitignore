@@ -1,0 +1,6 @@
+data/
+venv/
+*.pdf
+*.db
+.DS_Store
+__pycache__/
