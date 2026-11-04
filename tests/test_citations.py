@@ -22,6 +22,36 @@ def one(text, **kw):
 
 # ---------------------------------------------------------------- law reports
 
+def test_year_ranges_keep_first_year():
+    c = one("In Perera v. Silva (1978/79) 2 SLR 65, it was held")
+    assert (c["year"], c["report_key"], c["case_name"]) == ("1978", "SLR_1978_2_65", "Perera v. Silva")
+    assert one("see [1978/79] 1 SLR 352 (SC)")["report_key"] == "SLR_1978_1_352"
+    assert one("(1978-79) 1 Sri.L.R. 4 held")["report_key"] == "SLR_1978_1_4"
+
+
+def test_scc_year_then_bracket():
+    c = one("Kesavananda 1997 [1 SCC 388] held")
+    assert (c["report_key"], c["year"], c["foreign"]) == ("SCC_1997_1_388", "1997", True)
+
+
+def test_old_english_law_reports_series():
+    c = one("Blackburn J in Taylor v Caldwell (1871) LR 6 QB 597 at 600")
+    assert (c["report_key"], c["case_name"], c["foreign"]) == ("LR_QB_1871_6_597", "Taylor v Caldwell", True)
+    assert one("Hochster v De la Tour (1875) LR 10 QB 111")["case_name"] == "Hochster v De la Tour"
+    assert one("(1878) L. R. 8 Ch. D. 286")["report_key"] == "LR_ChD_1878_8_286"
+    assert one("(1871) LR 3 PC 465")["report_key"] == "LR_PC_1871_3_465"
+
+
+def test_sri_lr_without_volume():
+    c = one("In Mendis v Perera [2003] Sri L.R. 270 it was")
+    assert (c["report_key"], c["case_name"]) == ("SLR_2003_NA_270", "Mendis v Perera")
+
+
+def test_case_name_directly_before_bracket():
+    assert one("In Karunawathie v Wijesuria and Another[1980] 2 SLR 6 it was")["case_name"] == \
+        "Karunawathie v Wijesuria and Another"
+
+
 def test_english_report_without_volume_keeps_full_year():
     c = one("As held in Re Diplock [1949] Ch 333 the money")
     assert (c["reporter"], c["year"], c["volume"], c["page"]) == ("Ch", "1949", None, "333")
@@ -44,8 +74,9 @@ def test_air_year_court_page():
 def test_nlr_part_volume():
     c = one("Sharvananda in Caledonian Estates Ltd. vs. Hillman (1977) 79(i) NLR 421 stating that")
     assert (c["volume"], c["page"], c["year"]) == ("79(1)", "421", "1977")
-    assert c["report_key"] == "NLR_79-1_421"
-    assert one("in X v Y 79 (II) N.L.R. 12")["report_key"] == "NLR_79-2_12"
+    assert c["report_key"] == "NLR_79_421"                 # part-volume -> same key as "79 NLR 421"
+    assert one("in X v Y 79 (II) N.L.R. 12")["report_key"] == "NLR_79_12"
+    assert one("in X v Y 79 NLR 421")["report_key"] == "NLR_79_421"
 
 
 def test_common_sri_lankan_forms():

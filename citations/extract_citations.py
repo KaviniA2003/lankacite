@@ -66,10 +66,11 @@ FOREIGN_REPORTERS = {
     "WLR": r"W\.?\s*L\.?\s*R\.?", "AllER": r"All\s*E\.?\s*R\.?",
     "AIR": r"A\.?\s*I\.?\s*R\.?", "SCC": r"S\.?\s*C\.?\s*C\.?",
 }
-# reports cited by year only: [1970] AC 942, [1949] Ch 333, (2008) BLR 127
-NO_VOLUME_OK = {"AC", "QB", "KB", "Ch", "WLR", "AllER", "BLR"}
+# reports cited by year only: [1970] AC 942, [1949] Ch 333, (2008) BLR 127, [2003] Sri L.R. 270
+NO_VOLUME_OK = {"AC", "QB", "KB", "Ch", "WLR", "AllER", "BLR", "SLR"}
 
-YEAR = r"(?:[\(\[]\s*(?P<year>1[89]\d\d|20\d\d)\s*[\)\]]|(?<!\d)(?P<year_bare>1[89]\d\d|20\d\d))"
+# (1997) | [1997] | year ranges (1978-79) / [1978/79] -> first year | bare 1997
+YEAR = r"(?:[\(\[]\s*(?P<year>1[89]\d\d|20\d\d)(?:\s*[\-/–]\s*\d{2,4})?\s*[\)\]]|(?<!\d)(?P<year_bare>1[89]\d\d|20\d\d))"
 # volume, never the tail of a year; NLR part-volumes: 79(i) / 79 (2)
 VOL = r"\(?\s*(?<![\d/])(?P<vol>\d{1,3})(?:\s*\(\s*(?P<part>i{1,3}|I{1,3}|[1-3])\s*\))?\s*\)?"
 
@@ -87,6 +88,14 @@ REPORTER_RES = [(c, _reporter_regex(c, rx), False) for c, rx in SL_REPORTERS.ite
 
 # AIR 1981 SC 852 | A.I.R. 1950 Bom 12
 AIR_RE = re.compile(r"\bA\.?\s*I\.?\s*R\.?\s*(?P<year>1[89]\d\d|20\d\d)\s*(?P<court>S\.?\s*C\.?|[A-Z][A-Za-z]{1,10}\.?)\s*(?P<page>\d{1,4})\b")
+# 1997 [1 SCC 388]  (Indian form: year, then [volume SCC page])
+SCC_BRACKET_RE = re.compile(r"(?<!\d)(?P<year>(?:19|20)\d\d)\s*\[\s*(?P<vol>\d{1,2})\s*S\.?\s*C\.?\s*C\.?\s*(?P<page>\d{1,4})\s*\]")
+# old English "Law Reports" series: (1875) LR 10 QB 111 | (1878) L. R. 8 Ch. D. 286 | (1871) LR 3 PC 465
+LR_SERIES = {"QBD": r"Q\.?\s*B\.?\s*D\.?", "QB": r"Q\.?\s*B\.?", "ChD": r"Ch\.?\s*D\.?", "Ch": r"Ch\.?",
+             "CP": r"C\.?\s*P\.?(?:\s*D\.?)?", "Ex": r"Ex(?:ch)?\.?(?:\s*D\.?)?", "HL": r"H\.?\s*L\.?", "PC": r"P\.?\s*C\.?",
+             "Eq": r"Eq\.?", "AppCas": r"App\.?\s*Cas\.?"}
+LR_RE = re.compile(r"[\(\[]\s*(?P<year>1[89]\d\d)\s*[\)\]]\s*L\.?\s*R\.?\s*(?P<vol>\d{1,3})\s*(?P<series>"
+                   + "|".join(f"(?:{rx})" for rx in LR_SERIES.values()) + r")\s*,?\s*(?P<page>\d{1,4})\b")
 # 2008 Part II B.L.R. 169 | (2008) Part II BLR 169
 BALR_PART_RE = re.compile(r"[\(\[]?\s*(?P<year>(?:19|20)\d\d)\s*[\)\]]?\s*Part\s*(?P<vol>[IVX]+|\d)\s*,?\s*"
                           r"B\.?\s*A?\.?\s*L\.?\s*R\.?\s*,?\s*(?:p(?:g|age)?\.?\s*)?(?P<page>\d{1,4})\b")
@@ -120,7 +129,7 @@ _TOK = r"(?:[A-Z][\w.'’&\-]*,?|\((?:Pvt|Private|Pte)\)\.?)"
 NAME_RE = re.compile(
     rf"(?P<name>{_TOK}(?:\s+(?:{_TOK}|and|&|de|of)){{0,8}}?"
     r"\s+(?:v|vs|V)\.?\s+"
-    rf"(?:{_TOK}|and|of|the|de|others|Others|&|\(.*?\))(?:\s+(?:{_TOK}|and|of|the|de|for|others|Others|&|\(.*?\)))*?)"
+    rf"(?:{_TOK}|and|of|the|de|others|Others|&|\(.*?\))(?:\s+(?:{_TOK}|and|of|the|de|la|le|du|for|others|Others|&|\(.*?\)))*?)"
     r"\s*[,\(\[]?\s*$"
 )
 SUPRA_RE = re.compile(r"(?P<name>[A-Z][\w.'’\-]+(?:\s+(?:v|vs)\.?\s+[A-Z][\w.'’\-]+)?(?:'s)?)\s*\(?\s*supra\s*\)?", re.I)
@@ -219,6 +228,8 @@ def name_before(text: str, start: int) -> str:
     if not m:
         return ""
     name = re.sub(r"^(?:In|in|The|the|See|see|Also|also|In the case of)\s+", "", m.group("name").strip(" ,([")).strip()
+    # drop a trailing year / bracket / "LR" left over from the citation: "Perera v. Silva (1978/79)" -> "Perera v. Silva"
+    name = re.sub(r"(?:\s*(?:[\(\[][^\)\]]*\d[^\)\]]*[\)\]]?|\bL\.?\s*R\.?|\b(?:19|20)\d\d))+\s*[,\(\[]?\s*$", "", name).strip(" ,([")
     return name if 5 < len(name) < 140 else ""
 
 
@@ -298,6 +309,14 @@ def extract_from_judgment(case_id: str, raw_text: str, n_pages: int | None = Non
     for m in AIR_RE.finditer(text):
         court = re.sub(r"[\s.]", "", m.group("court"))
         add_report(m, "AIR", True, m.group("year"), None, m.group("page"), f"AIR_{m.group('year')}_{court}_{m.group('page')}")
+    for m in SCC_BRACKET_RE.finditer(text):
+        add_report(m, "SCC", True, m.group("year"), m.group("vol"), m.group("page"),
+                   f"SCC_{m.group('year')}_{m.group('vol')}_{m.group('page')}")
+    for m in LR_RE.finditer(text):
+        if not overlaps(m.start(), m.end()):
+            series = next(k for k, rx in LR_SERIES.items() if re.fullmatch(rx, m.group("series").strip()))
+            add_report(m, f"LR_{series}", True, m.group("year"), m.group("vol"), m.group("page"),
+                       f"LR_{series}_{m.group('year')}_{m.group('vol')}_{m.group('page')}")
     for m in list(BALR_PART_RE.finditer(text)) + list(BALR_VOL_RE.finditer(text)):
         if not overlaps(m.start(), m.end()):
             vol = str(roman_to_int(m.group("vol")))
@@ -314,7 +333,8 @@ def extract_from_judgment(case_id: str, raw_text: str, n_pages: int | None = Non
                 part = str(roman_to_int(part)) if not part.isdigit() else part
                 vol = f"{vol}({part})"
             pk = vol.replace("(", "-").replace(")", "") if vol else "NA"
-            key = f"NLR_{pk}_{m.group('page')}" if code == "NLR" else f"{code}_{year or 'NA'}_{pk}_{m.group('page')}"
+            # NLR part-volumes (79(i) NLR 421) share page numbers within the volume -> same key as 79 NLR 421
+            key = f"NLR_{re.sub(r'-.*', '', pk)}_{m.group('page')}" if code == "NLR" else f"{code}_{year or 'NA'}_{pk}_{m.group('page')}"
             add_report(m, code, foreign, year, vol, m.group("page"), key)
 
     # 2) case-number citations; skip own number and every number in the caption (same case / heard together)
