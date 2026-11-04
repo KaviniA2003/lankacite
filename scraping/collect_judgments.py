@@ -41,6 +41,18 @@ DELAY_SECONDS = 2.0
 
 # Case types we recognise, mapped to one standard label.
 CASE_TYPES = [
+    # added in step 2 (only catch formats the older patterns below could not parse)
+    (r"s\.?\s*c\.?\s*[\(/\-\s]*c\.?\s*h\.?\s*c\.?\s*\)?\s*/?\s*(?:appea?l+)?", "SC_CHC"),
+    (r"s\.?\s*c\.?\s*[\(/\-\s]*h\.?\s*c\.?\s*c\.?\s*a\.?\s*\)?\s*[\(/\-\s]*l\.?\s*a\.?", "SC_HCCA_LA"),
+    (r"s\.?\s*c\.?\s*[\(/\-\s]*h\.?\s*c\.?\s*\)\s*[/\-\s]*l\.?\s*a\.?", "SC_HC_LA"),   # SC (HC) LA
+    (r"s\.?\s*c\.?\s*[\(/\-\s]*\(?\s*s\.?\s*p\.?\s*l\.?\s*[\)/\-]\s*[/\-\s]*l\.?\s*a\.?", "SC_SPL_LA"),
+    (r"s\.?\s*c\.?\s*[\(/\-\s]*t\.?\s*a\.?\s*b\b\.?", "SC_TAB"),
+    (r"s\.?\s*c\.?\s*[\(/\-\s]*writ\b", "SC_WRIT"),
+    (r"s\.?\s*c\.?\s*[\(/\-\s]*misc?(?:ellaneous)?\b\.?", "SC_MISC"),
+    (r"s\.?\s*c\.?\s*[\(/\-\s]*exp(?:ulsion)?\b\.?", "SC_EXP"),
+    (r"\bc\.?\s*a\.?\s*[\(/\-\s]*wri?t\b", "CA_WRIT"),
+    (r"\bc\.?\s*a\.?\s*[\(/\-\s]*p\.?\s*h\.?\s*c\.?\s*\)?", "CA_PHC"),
+    # original step-1 patterns
     (r"s\.?\s*c\.?\s*[\(/\-\s]*f\.?\s*/?\s*r\.?\)?", "SC_FR"),
     (r"s\.?\s*c\.?\s*[\(/\-\s]*h\.?\s*c\.?\s*[\(/\-\s]*l\.?\s*a\.?", "SC_HC_LA"),
     (r"s\.?\s*c\.?\s*[\(/\-\s]*s\.?\s*p\.?\s*l\.?\s*l\.?\s*a\.?", "SC_SPL_LA"),

@@ -48,7 +48,7 @@ classification. CaseHOLD (Zheng et al. 2021) — explicit overruling is easy (~k
 ## Repo layout
 ```
 scraping/collect_judgments.py   step 1 — DONE (lankalaw.net year pages; optional supremecourt.lk monthly pages)
-citations/extract_citations.py  step 2 — written & tested on mock text; run on full data pending
+citations/extract_citations.py  step 2 — run on full data; tests in tests/test_citations.py (pytest)
 annotation/                     step 3 — labelling guide, Label Studio config, exports
 models/                         step 4 — treatment classifiers A/B/C, NLI support check
 status/                         good-law rules
@@ -64,14 +64,21 @@ data/                           NOT in git (judgments.db, pdfs/, citation_graph.
   judgment_date, judge, keywords, listed_year, source, pdf_url, pdf_path, n_pages, n_chars, status, text.
 - Case IDs come from `normalise_case_no()` in scraping/collect_judgments.py — always reuse it, never re-implement.
 - Table `citations`: citing_case, kind (report | case_no | supra), raw, case_name, reporter (NLR/SLR/CLW/CLR/BLR or foreign),
-  foreign_report, year, volume, page, case_no, report_key (e.g. `SLR_1997_2_98`, `NLR_71_529`), target, link_method,
-  link_score, start_char, context (citing sentence ±1 sentence).
+  foreign_report, year, volume, page, case_no, minutes_date (from "SC Minutes of <date>"), report_key (e.g. `SLR_1997_2_98`,
+  `NLR_71_529`, `NLR_79-1_421` for part-volumes, `Ch_1949_NA_333`, `AIR_1981_SC_852`), target, link_method
+  (case_number | case_number+date | case_number_not_in_db | name_fuzzy | report_key_via_name | report_key | foreign_report |
+  needs_review), link_score, candidate (the guessed judgment for needs_review rows; target stays unlinked), start_char
+  (offset in the header-stripped, cleaned text, not the raw text), context (citing sentence ±1 sentence).
+- Decision dates: `judgments.judgment_date` is empty; step 2 reads "Decided on" from the text (found for 1,772/1,891).
+- `normalise_case_no()` also knows SC_CHC, SC_HCCA_LA, SC_TAB, SC_WRIT, SC_MISC, SC_EXP, CA_WRIT, CA_PHC (added step 2;
+  existing IDs unchanged). 29 `UNPARSED_n` judgments would now parse, but step 1 was NOT re-run, so their IDs stay
+  `UNPARSED_n`; step 2 maps their parsed number to the UNPARSED id when linking.
 - Graph: `data/citation_graph.json` / `.graphml` (nodes: judgment_in_db | external_case | foreign; edges carry context).
 
 ## Step plan and status
 - [x] 0. Topic approved. Pilot: ChatGPT Q1 of 20 done (6/6 cases real, 4/6 had wrong citation details). Q2–Q20 pending.
 - [x] 1. Collect judgments (2009–2025) — done.
-- [ ] 2. Run citation extraction on full data; evaluate on `data/citations_sample.csv` (50 judgments: precision, recall,
+- [ ] 2. Extraction run + formats fixed (11,972 citations). Pending: evaluate on `data/citations_sample.csv` (50 judgments: precision, recall,
         linking accuracy); add citation formats found missing in real judgments.
 - [ ] 3. Labelling. Labels: `followed/applied` · `distinguished` · `doubted/criticised` · `overruled/per incuriam` ·
         `referred (neutral)`. Build Label Studio config + import file of citation contexts (prioritise SC FR; oversample
