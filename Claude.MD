@@ -39,9 +39,13 @@ Key references: Liu et al. 2026; Dahl et al. 2024 (Large Legal Fictions); Magesh
 4. (Kavini) ChatGPT answers to 20 of the questions → `audit/chatgpt_answers.txt`.
 
 **Thursday — treatment classification + Part 1**
-- 200 citation contexts (prioritise SC FR; oversample negatives via cue words) with LLM-suggested labels; Kavini
-  accepts/corrects in a spreadsheet. Labels (4): `followed/applied` · `distinguished` · `doubted/overruled` · `neutral`.
-- Method A: fine-tuned Legal-BERT or DeBERTa-v3-base (MPS). Method B: LLM prompting (zero/few-shot).
+- 400 citation contexts selected from the DB (dedup, prioritise SC FR, oversample cue-word negatives) and
+  labelled by Claude (Anthropic) — `annotation/silver_labels.csv`. These are **silver labels**, not Kavini's.
+  Labels (4): `followed/applied` · `distinguished` · `doubted/overruled` · `neutral`.
+- Kavini verifies a 50-item gold set (random sample) in `annotation/gold_check_50.csv` — writes OK or the
+  correct label in the `kavini_label` column. That gives a reliability figure (Claude-vs-Kavini agreement).
+- Method A: fine-tuned Legal-BERT or DeBERTa-v3-base (MPS). Method B: LLM prompting (zero/few-shot) — MUST use a
+  different model from Claude (local Llama-3.2-3B once overnight run finishes, or Groq if a key is available).
   Metrics: macro-F1, per-class F1, confusion matrix. Results table + figure.
 - Good-law flag: case gets 🔴 if any later citation is classified doubted/overruled.
 - Network analysis (in-degree, PageRank, top 20 judgments, citations to NLR/SLR/foreign over time) + graph figure.
@@ -109,7 +113,58 @@ data/                           NOT in git
 - [x] Tonight's quick fixes: year ranges, `1997 [1 SCC 388]`, old `(1875) LR 10 QB 111` series (key `LR_QB_1875_10_111`),
       NLR part-volumes share the volume key (`NLR_79_421`), no-volume `[2003] Sri L.R. 270`, case-name cleanup.
       25 tests pass. Re-run: 12,016 citations (9,383 report · 2,277 case_no · 356 supra); 7,622 with a case name.
-- [ ] Questions, Llama overnight run, ChatGPT answers.
+- [x] 80 audit questions written; Llama-3.2-3B test on 3 questions worked (27-38 s/q on MPS, citations extracted,
+      hidden states saved). Full 80-question run launched in background with `caffeinate -i`.
+- [x] Silver labels pass 1 (Claude free-form): followed/applied 256 · neutral 94 · distinguished 33 ·
+      doubted/overruled 17. Kavini's gold 50 verified 27/48 (56.2%, kappa 0.318) - Claude over-called
+      followed/applied on counsel citations, lists and footnotes.
+- [x] Silver labels pass 2 (strict rule: followed/applied only when the CURRENT judge actively applies
+      / approves the case; counsel citations, parenthetical lists and footnotes -> neutral).
+      221 of 400 labels changed. Final distribution: followed/applied 121 · neutral 261 · distinguished 10 ·
+      doubted/overruled 8. Re-score vs gold 50: 32/48 (66.7%, kappa 0.386). File: `annotation/silver_labels.csv`.
+      Near-duplicate rows in gold 50 (ids {8871,8836} and {8985,8835} - identical context) collapsed when scoring.
+- [x] `annotation/gold_extra_20.csv` - 20 NEW contexts with strong negative/distinguishing cues (none in
+      silver_labels.csv) for Kavini to label; will boost the doubted/overruled + distinguished support.
+- [x] Llama 77/77 questions answered (3 earlier test + 77 overnight = 80 total; 494 citations with hidden states
+      saved to `probing/hidden_states/`). Method B for treatment classification will use Llama-3.2-3B (not Claude).
+- [x] ChatGPT audit: 80 answers each for gpt-4o-mini ($0.038) and gpt-4o ($0.366) in `audit/chatgpt_answers.jsonl`.
+      gpt-4o-mini initially degenerated on 33/80 at temperature=0 (repeats like "S. S. S. S. ..."); fixed by
+      switching to temperature=0.3 + frequency_penalty=0.3 + presence_penalty=0.1 and re-running those 33.
+- [x] Silver labels pass 3 (Kavini's rule: followed/applied even inside a list if the judge accepts the proposition;
+      only current-court overruling counts as doubted/overruled). followed/applied 113 · neutral 275 · distinguished 8
+      · doubted/overruled 4. Gold agreement on the extra 20: 4/20 (cue-word heuristic too lenient; Kavini re-labelled
+      many as neutral or followed/applied).
+- [x] Combined gold set (50 + 20, deduped contexts = 68): followed/applied 23 · distinguished 4 · doubted/overruled 3 ·
+      neutral 38. File: `evaluation/gold.csv`.
+- [x] Method A (DistilBERT fine-tuned on 400 silver, test on 68 gold, MPS, 6 epochs, class-weighted CE):
+      **macro-F1 0.551**, accuracy 0.735. Per-class F1 - followed/applied 0.634 (23), distinguished 0.750 (4),
+      doubted/overruled 0.000 (3), neutral 0.819 (38). File: `evaluation/method_a_distilbert.md`.
+- [x] Method B (Llama-3.2-3B zero-shot, same 68 gold): **macro-F1 0.389**, accuracy 0.397. Per-class - followed/applied
+      0.565, distinguished 0.276, doubted/overruled 0.400, neutral 0.314. Method B catches rare negatives Method A
+      misses, but at low precision. File: `evaluation/method_b_llama.md`.
+- [x] Network analysis: 6,597 nodes · 10,085 edges. Top in-degree: Channa Peiris v AG (39), Gamaethige v Siriwardena (36),
+      Amal Sudath Silva (34). Top PageRank: Gamaethige (0.00136), Ghany v Dissanayake (0.00105), Haputhantirige v AG (0.00100).
+      Files: `evaluation/top20_in_degree.md`, `top20_pagerank.md`, `citations_by_reporter_year.png`, `network_sample.png`.
+- [x] External reference index: 2,197 cases scraped from lankalaw.net A-Z indexes (SC 1878-2011 + CA 1809-2011; CA letters
+      v/w/x/y/z return 404 - no CA cases on those pages). File: `data/reported_cases_index.csv`.
+- [x] AI-citation audit (post-external-index, with claimed principle stored per row):
+      | model | verified-correct | verified-correct-external | exists-name-unverified | number-exists-unverified | name-mismatch | wrong-case | real-name-wrong-citation | not-found-anywhere | unverifiable | undecidable | total | verified-rate |
+      | gpt-4o | 3 | 0 | 7 | 16 | 5 | 2 | 7 | 89 | 3 | 84 | 216 | 1.4% |
+      | gpt-4o-mini | 0 | 0 | 2 | 15 | 0 | 0 | 0 | 82 | 6 | 23 | 128 | 0.0% |
+      | llama-3.2-3b | 64 | 0 | 12 | 124 | 99 | 32 | 108 | 40 | 13 | 2 | 494 | 13.0% |
+      Sanity: 5/6 pilot citations verified (1/6 is `number-exists-unverified` - case number right, AI gave no name).
+      File: `evaluation/audit_results_per_model.md`, examples in `audit_verdict_examples.md`.
+- [x] Hallucination probe (Llama-3.2-3B hidden states; clean subset = citations where AI gave a name AND verdict is
+      verified-correct / name-mismatch / wrong-case / not-found-anywhere; N=118 (41 real, 77 fake)):
+      | probe | input | AUROC |
+      | main | layer 20 hidden state, GroupKFold by (q_id, raw) | **1.000** |
+      | surface baseline | has_rk, has_cn, has_name, raw-length | 0.670 |
+      | shuffled-label control | layer 20, labels permuted | 0.529 |
+      | report-key only (N=94) | layer 20 | 0.993 |
+      Shuffled control works; surface baseline well below main; probe is detecting more than citation format.
+      Caveat: perfect AUROC on N=118 with 3072-dim LR likely over-optimistic on a truly held-out set;
+      report as strong signal, not as a tool-ready detector. File: `evaluation/probe.md`.
+- [ ] Gradio tool, probe calibration on more data, Kavini's verify_30 + needs_kavini + gold_extra_20 sign-off.
 - [ ] Thursday · Friday · Saturday (see plan).
 
 ## How to work with Kavini

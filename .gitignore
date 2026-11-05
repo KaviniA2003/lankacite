@@ -6,3 +6,8 @@ venv/
 __pycache__/
 .pytest_cache/
 probing/hidden_states/
+.env
+audit/_full.log
+audit/_test3.log
+annotation/_contexts.txt
+annotation/_windows.txt
