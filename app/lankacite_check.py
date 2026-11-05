@@ -336,7 +336,8 @@ with gr.Blocks(title="LankaCite Check") as app:
         final_tbl = gr.Dataframe(
             headers=["citation", "AI's case name", "internal-signal risk",
                      "external verdict", "real case name"],
-            row_count=(0, "dynamic"), wrap=True, label="Final check")
+            row_count=(0, "dynamic"), wrap=True, label="Final check",
+            column_widths=["18%", "22%", "15%", "25%", "20%"])
         footer = gr.Markdown("")
         ask_btn.click(ask_lankacite, inputs=q_in,
                       outputs=[answer_box, live_md, final_tbl, footer])
