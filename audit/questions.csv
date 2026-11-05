@@ -1,0 +1,81 @@
+q_id,area,question
+Q01,fundamental_rights,"What is the time limit for filing a fundamental rights application under Article 126 of the Sri Lankan Constitution, and when can the Supreme Court excuse a delay? Cite Sri Lankan cases."
+Q02,fundamental_rights,How has the Supreme Court of Sri Lanka interpreted 'executive or administrative action' under Article 126? Cite the leading cases.
+Q03,fundamental_rights,"What is the test for equal protection under Article 12(1) of the Sri Lankan Constitution, and how has the Supreme Court applied the doctrine of legitimate expectation? Cite cases."
+Q04,fundamental_rights,When does an arrest violate Article 13(1) of the Sri Lankan Constitution? Cite Supreme Court decisions on arbitrary arrest.
+Q05,fundamental_rights,"How has the Supreme Court of Sri Lanka dealt with torture and cruel, inhuman or degrading treatment by police under Article 11? Cite cases and the compensation awarded."
+Q06,fundamental_rights,Can a police officer be held personally liable to pay compensation in a fundamental rights case in Sri Lanka? Cite the relevant Supreme Court judgments.
+Q07,fundamental_rights,"How have Sri Lankan courts treated custodial deaths in fundamental rights applications, including standing of the deceased's family? Cite cases."
+Q08,fundamental_rights,What is the scope of freedom of speech and expression under Article 14(1)(a) of the Sri Lankan Constitution? Cite Supreme Court cases.
+Q09,fundamental_rights,Is the right to life recognised as an implied fundamental right in Sri Lanka? Cite the Supreme Court decisions on this point.
+Q10,fundamental_rights,How has the Supreme Court of Sri Lanka applied Article 12 to school admissions disputes? Cite cases.
+Q11,fundamental_rights,Has the Supreme Court of Sri Lanka found fundamental rights violations in public service promotions and transfers? Cite the leading cases.
+Q12,fundamental_rights,What is the scope of the right to information under Article 14A of the Sri Lankan Constitution? Cite Supreme Court cases.
+Q13,fundamental_rights,How has the Supreme Court of Sri Lanka treated environmental protection through Article 12(1) and the public trust doctrine? Cite cases such as those on the Eppawala phosphate deposit.
+Q14,fundamental_rights,"When will the Supreme Court of Sri Lanka grant leave to proceed in a fundamental rights application, and what must the petitioner show? Cite cases."
+Q15,fundamental_rights,Can a decision of the Cabinet of Ministers be challenged as a violation of fundamental rights in Sri Lanka? Cite Supreme Court cases.
+Q16,fundamental_rights,How has the Supreme Court of Sri Lanka applied fundamental rights to the dissolution of Parliament or other political decisions? Cite the relevant judgments.
+Q17,land_property,What must a plaintiff prove to establish prescriptive title under Section 3 of the Prescription Ordinance in Sri Lanka? Cite cases.
+Q18,land_property,"Can a co-owner acquire prescriptive title against other co-owners in Sri Lanka, and what is 'ouster'? Cite the leading cases."
+Q19,land_property,What are the duties of the court in investigating title in a partition action under the Partition Law No. 21 of 1977? Cite Supreme Court cases.
+Q20,land_property,"In a rei vindicatio action in Sri Lanka, who bears the burden of proving title? Cite cases."
+Q21,land_property,What is the effect of a deed of gift being revoked for gross ingratitude under Sri Lankan law? Cite cases.
+Q22,land_property,How do Sri Lankan courts determine whether a transfer of land was in fact a mortgage or held in constructive trust under Section 83 of the Trusts Ordinance? Cite cases.
+Q23,land_property,"What is the legal position of a licensee who refuses to vacate land in Sri Lanka, and can a licensee dispute the licensor's title? Cite cases."
+Q24,land_property,What are the requirements for a valid notarially executed deed under Section 2 of the Prevention of Frauds Ordinance in Sri Lanka? Cite cases.
+Q25,land_property,"How have Sri Lankan courts dealt with the acquisition of land under the Land Acquisition Act, including the requirement of public purpose? Cite cases."
+Q26,land_property,What is the doctrine of exceptio rei venditae et traditae and how has it been applied in Sri Lanka? Cite cases.
+Q27,land_property,When can a servitude or right of way of necessity be claimed in Sri Lanka? Cite cases.
+Q28,land_property,"What protection does the Rent Act No. 7 of 1972 give to tenants in Sri Lanka, and when can a landlord recover possession? Cite cases."
+Q29,land_property,"Can a final partition decree be set aside in Sri Lanka, and on what grounds? Cite the relevant Supreme Court judgments."
+Q30,contract,"What are the requirements for a valid contract under Roman-Dutch law as applied in Sri Lanka, including the role of causa? Cite Sri Lankan cases."
+Q31,contract,How do Sri Lankan courts treat penalty clauses and liquidated damages in contracts? Cite cases.
+Q32,contract,What is the doctrine of laesio enormis and has it been applied in Sri Lanka? Cite cases.
+Q33,contract,When can a contract be rescinded for misrepresentation or fraud under Sri Lankan law? Cite cases.
+Q34,contract,How have Sri Lankan courts applied the doctrine of frustration of contract? Cite cases.
+Q35,contract,"What remedies are available for breach of contract in Sri Lanka, and when will specific performance be granted? Cite cases."
+Q36,contract,What is the liability of a bank to its customer for paying a forged cheque in Sri Lanka? Cite cases.
+Q37,contract,How do Sri Lankan courts interpret arbitration agreements and when will they set aside an arbitral award under the Arbitration Act No. 11 of 1995? Cite cases.
+Q38,contract,Is a contract in restraint of trade enforceable in Sri Lanka? Cite cases.
+Q39,contract,"What is the position of a surety or guarantor under Sri Lankan law, and can the surety claim the benefit of excussion? Cite cases."
+Q40,contract,How have Sri Lankan courts dealt with the enforcement of foreign judgments or foreign arbitral awards? Cite cases.
+Q41,contract,"When is a party liable for interest on a money decree in Sri Lanka, and how is the rate determined? Cite cases."
+Q42,contract,What is the effect of an agreement to sell immovable property that is not notarially executed in Sri Lanka? Cite cases.
+Q43,criminal,What is the test for the defence of grave and sudden provocation under Section 294 of the Penal Code of Sri Lanka? Cite Supreme Court and Court of Appeal cases.
+Q44,criminal,How do Sri Lankan courts evaluate the evidence of a single eyewitness in a murder trial? Cite cases.
+Q45,criminal,"When is a confession to a police officer admissible in Sri Lanka, and how do Sections 25 and 26 of the Evidence Ordinance apply? Cite cases."
+Q46,criminal,What is the 'dock statement' and what weight do Sri Lankan courts give to it? Cite cases.
+Q47,criminal,How have Sri Lankan courts applied the principle of common intention under Section 32 of the Penal Code? Cite cases.
+Q48,criminal,What is the Ellenborough principle and when may an adverse inference be drawn from an accused's silence in Sri Lanka? Cite cases.
+Q49,criminal,How do Sri Lankan courts deal with delay in making a first information or a witness statement in criminal cases? Cite cases.
+Q50,criminal,What is the law on circumstantial evidence in Sri Lankan murder cases? Cite the leading cases.
+Q51,criminal,When can the Court of Appeal or Supreme Court of Sri Lanka order a retrial? Cite cases.
+Q52,criminal,"How do Sri Lankan courts approach sentencing, including the death penalty and suspended sentences? Cite cases."
+Q53,criminal,What is the test for the right of private defence under the Sri Lankan Penal Code? Cite cases.
+Q54,criminal,How have Sri Lankan courts treated confessions made under the Prevention of Terrorism Act? Cite cases.
+Q55,criminal,"What are the requirements for granting bail in Sri Lanka under the Bail Act No. 30 of 1997, including 'exceptional circumstances'? Cite cases."
+Q56,labour,What is the meaning of 'just and equitable' orders by Labour Tribunals under Section 31B of the Industrial Disputes Act in Sri Lanka? Cite cases.
+Q57,labour,How do Sri Lankan courts determine whether a person is an employee or an independent contractor? Cite cases.
+Q58,labour,What is 'constructive termination' in Sri Lankan labour law? Cite cases.
+Q59,labour,How is compensation for wrongful termination calculated by Labour Tribunals in Sri Lanka? Cite Supreme Court cases.
+Q60,labour,When can an employer dismiss an employee for loss of confidence in Sri Lanka? Cite cases.
+Q61,labour,What is the scope of the Termination of Employment of Workmen (Special Provisions) Act No. 45 of 1971? Cite cases.
+Q62,labour,Can an appeal from a Labour Tribunal in Sri Lanka be made on questions of fact? Cite cases on 'question of law'.
+Q63,labour,How have Sri Lankan courts dealt with the Gratuity Act and claims for gratuity? Cite cases.
+Q64,labour,What is the effect of a collective agreement under the Industrial Disputes Act in Sri Lanka? Cite cases.
+Q65,labour,How do Sri Lankan courts treat a domestic inquiry held by an employer before dismissal? Cite cases.
+Q66,labour,What are the powers of an arbitrator in an industrial dispute referred under Section 4(1) of the Industrial Disputes Act? Cite cases.
+Q67,labour,"Can a public officer challenge a dismissal by the Public Service Commission in Sri Lanka, and in which forum? Cite cases."
+Q68,administrative,"What are the grounds for issuing a writ of certiorari in Sri Lanka, and how have courts applied irrationality and illegality? Cite cases."
+Q69,administrative,When will the Court of Appeal of Sri Lanka issue a writ of mandamus? Cite cases.
+Q70,administrative,"How have Sri Lankan courts applied the rules of natural justice, including the right to be heard (audi alteram partem)? Cite cases."
+Q71,administrative,What is the doctrine of legitimate expectation in Sri Lankan administrative law? Cite cases.
+Q72,administrative,Can an ouster clause in a statute exclude judicial review in Sri Lanka? Cite cases on Article 140 and finality clauses.
+Q73,administrative,Is there a duty to give reasons for administrative decisions in Sri Lanka? Cite cases.
+Q74,administrative,How do Sri Lankan courts apply the doctrine of proportionality in judicial review? Cite cases.
+Q75,administrative,When must a petitioner exhaust alternative remedies before seeking a writ in Sri Lanka? Cite cases.
+Q76,administrative,What is the effect of delay or laches on a writ application in Sri Lanka? Cite cases.
+Q77,administrative,How have Sri Lankan courts reviewed decisions of the Commissioner of Elections or Election Commission? Cite cases.
+Q78,administrative,What is the scope of judicial review over decisions of public corporations and state-owned companies in Sri Lanka? Cite cases.
+Q79,administrative,How have Sri Lankan courts dealt with bias and the rule against bias (nemo judex in causa sua)? Cite cases.
+Q80,administrative,What standing (locus standi) is required for public interest litigation in Sri Lanka? Cite cases.
