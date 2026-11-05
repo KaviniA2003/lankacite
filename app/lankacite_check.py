@@ -17,8 +17,11 @@ import os
 import re
 import sqlite3
 import sys
+import time
 
 import gradio as gr
+import joblib
+import numpy as np
 
 HERE = os.path.dirname(os.path.abspath(__file__))
 ROOT = os.path.join(HERE, "..")
@@ -109,6 +112,166 @@ with open(os.path.join(ROOT, "evaluation", "top20_in_degree.csv")) as f:
 
 NETWORK_PNG = os.path.join(ROOT, "evaluation", "network_sample.png")
 
+# ===== Ask LankaCite tab - lazy Llama + probe =====
+PROBE_PATH = os.path.join(ROOT, "probing", "probe.joblib")
+LLAMA_MODEL_ID = "unsloth/Llama-3.2-3B-Instruct"
+SYSTEM_PROMPT = ("You are a legal research assistant specialising in Sri Lankan law. Answer the "
+                 "question accurately. Support every legal proposition with Sri Lankan case law, "
+                 "giving the full citation for each case: case name, year, law report, volume and "
+                 "page (for example: Perera v. Attorney General (1992) 1 Sri LR 199), or the "
+                 "Supreme Court case number (for example: SC FR 256/2017).")
+# Regex for completed citations (same families the extractor recognises)
+CIT_LIVE_RE = re.compile(
+    r"(?P<rep>\((?:19|20)\d{2}\)\s*\d*\s*(?:Sri\s*L\.?R\.?|NLR|BLR)\s*\d+|"
+    r"\[(?:19|20)\d{2}\]\s*\d*\s*(?:Sri\s*L\.?R\.?|NLR|BLR)\s*\d+|"
+    r"\d+\s+NLR\s+\d+)|"
+    r"(?P<cn>S\.?\s*C\.?\s*(?:F\.?\s*R\.?|Appeal|HCCA|Writ|CHC|TAB)?\s*\(?(?:FR|Appeal)?\)?\s*/?\s*\d{1,5}\s*/\s*(?:19|20)\d{2})",
+    re.I)
+
+_llama = {"tok": None, "model": None, "device": None, "layer": None, "clf": None}
+
+
+def _load_llama():
+    if _llama["model"] is not None:
+        return
+    import torch
+    from transformers import AutoModelForCausalLM, AutoTokenizer
+    probe = joblib.load(PROBE_PATH)
+    _llama["clf"] = probe["clf"]
+    _llama["layer"] = probe["layer"]
+    device = "mps" if torch.backends.mps.is_available() else "cpu"
+    tok = AutoTokenizer.from_pretrained(LLAMA_MODEL_ID)
+    model = AutoModelForCausalLM.from_pretrained(LLAMA_MODEL_ID, dtype=torch.float16).to(device).eval()
+    _llama.update({"tok": tok, "model": model, "device": device, "torch": torch})
+    print(f"Llama loaded on {device}, probe layer {probe['layer']}")
+
+
+def _score(hs: np.ndarray) -> float:
+    return float(_llama["clf"].predict_proba(hs.reshape(1, -1))[:, 0][0])  # P(fake)
+
+
+def _risk_label(p_fake):
+    pct = int(round(p_fake * 100))
+    if p_fake >= 0.6:
+        return f"⚠️ high risk ({pct}%)"
+    if p_fake >= 0.35:
+        return f"⚠️ medium ({pct}%)"
+    return f"✓ low ({pct}%)"
+
+
+def _render_live(text, scored):
+    if not scored:
+        return "_no completed citation yet_"
+    lines = ["| citation | internal-signal |", "|---|---|"]
+    for raw, info in scored.items():
+        lines.append(f"| `{raw}` | {info['risk']} |")
+    return "\n".join(lines)
+
+
+def _final_table(text, scored):
+    cits = [c for c in extract_from_judgment("ASK", text) if c.get("kind") != "supra"]
+    seen_raw = {c["raw"] for c in cits}
+    for c in extra_case_nos(text):
+        if c["raw"] not in seen_raw:
+            attach_name_from_text(c, text)
+            cits.append(c)
+    rows = []
+    verified = high = 0
+    for c in cits:
+        if not sl_citation(c):
+            continue
+        v, _ = classify(c)
+        tgt = c.get("case_no") or c.get("report_key") or ""
+        icon = ICON.get(v, v)
+        if tgt in doubted and v.startswith("verified"):
+            icon = "🔴 verified but later doubted/overruled"
+            verified += 1
+        elif v.startswith("verified"):
+            verified += 1
+        # match probe score by raw
+        score_info = scored.get(c["raw"])
+        risk = score_info["risk"] if score_info else "-"
+        if score_info and score_info["p_fake"] >= 0.6:
+            high += 1
+        rows.append([c["raw"], c.get("case_name") or "-", risk, icon,
+                     db_real_name(c) or "-"])
+    summary = f"**{verified} of {len(rows)} citations verified; {high} high-risk.**"
+    return rows, summary
+
+
+def ask_lankacite(question):
+    if not question or not question.strip():
+        yield "", "_no question_", [], ""
+        return
+    _load_llama()
+    torch = _llama["torch"]
+    tok = _llama["tok"]; model = _llama["model"]; dev = _llama["device"]
+    layer = _llama["layer"]
+
+    msgs = [{"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": question}]
+    prompt_ids = tok.apply_chat_template(msgs, add_generation_prompt=True, return_tensors="pt",
+                                         return_dict=True)["input_ids"].to(dev)
+    eos = tok.eos_token_id
+    eot = tok.convert_tokens_to_ids("<|eot_id|>")
+
+    # prime with prompt (single forward pass to build cache)
+    with torch.no_grad():
+        out = model(input_ids=prompt_ids, use_cache=True, output_hidden_states=False)
+    past = out.past_key_values
+    next_id = int(out.logits[0, -1].argmax())
+
+    gen_ids = []
+    hs_per_token = []
+    token_char_end = []     # end position (in decoded answer) of each generated token
+    scored = {}             # raw -> {p_fake, risk}
+    answer = ""
+    t0 = time.time()
+    MAX_NEW = 700
+    for step in range(MAX_NEW):
+        if next_id in (eos, eot):
+            break
+        gen_ids.append(next_id)
+        tok_text = tok.decode([next_id], skip_special_tokens=True)
+        answer += tok_text
+        token_char_end.append(len(answer))
+
+        # forward one token with cache; keep hidden state at probe layer
+        inp = torch.tensor([[next_id]], device=dev)
+        with torch.no_grad():
+            out = model(input_ids=inp, past_key_values=past, use_cache=True,
+                        output_hidden_states=True)
+        past = out.past_key_values
+        hs = out.hidden_states[layer][0, -1].float().cpu().numpy()
+        hs_per_token.append(hs)
+        next_id = int(out.logits[0, -1].argmax())
+
+        # check for completed citations in the text so far
+        for m in CIT_LIVE_RE.finditer(answer):
+            raw = m.group(0)
+            if raw in scored:
+                continue
+            # only treat as 'completed' if at least one token later exists (so the LLM moved on)
+            if m.end() > len(answer) - 3:
+                continue
+            # find the generated-token index whose end >= m.end()
+            tok_i = next((i for i, e in enumerate(token_char_end) if e >= m.end()), None)
+            if tok_i is None:
+                continue
+            p_fake = _score(hs_per_token[tok_i])
+            scored[raw] = {"p_fake": p_fake, "risk": _risk_label(p_fake)}
+            yield answer, _render_live(answer, scored), [], ""
+
+        if step % 8 == 0:
+            yield answer, _render_live(answer, scored), [], ""
+
+    elapsed = time.time() - t0
+    table, summary = _final_table(answer, scored)
+    footer = (f"{summary}  ·  generated in {elapsed:.1f}s · {len(gen_ids)} tokens · "
+              f"**Internal-signal risk is an experimental early warning "
+              f"(probe trained on ~120 citations). External verification is the final check.**")
+    yield answer, _render_live(answer, scored), table, footer
+
 # ----- example answers --------------------------------------------------
 EX_PILOT = (
     "Six real Sri Lankan authorities on Article 126 are: "
@@ -159,6 +322,24 @@ with gr.Blocks(title="LankaCite Check") as app:
         b2.click(lambda: EX_GPT, outputs=txt)
         b3.click(lambda: EX_LLAMA, outputs=txt)
         btn.click(check_answer, inputs=txt, outputs=out)
+
+    with gr.Tab("Ask LankaCite"):
+        gr.Markdown("### Ask a Sri Lankan legal question\n"
+                    "Llama-3.2-3B generates an answer token by token. Each completed citation is "
+                    "scored by an experimental internal-signal probe (early warning). The external "
+                    "verifier runs on every citation when generation finishes (final check).")
+        q_in = gr.Textbox(lines=3, label="Question",
+                          placeholder="e.g. What is the time limit for a fundamental rights application?")
+        ask_btn = gr.Button("Ask", variant="primary")
+        answer_box = gr.Textbox(label="Streaming answer", lines=14)
+        live_md = gr.Markdown("_citations with live risk will appear here_")
+        final_tbl = gr.Dataframe(
+            headers=["citation", "AI's case name", "internal-signal risk",
+                     "external verdict", "real case name"],
+            row_count=(0, "dynamic"), wrap=True, label="Final check")
+        footer = gr.Markdown("")
+        ask_btn.click(ask_lankacite, inputs=q_in,
+                      outputs=[answer_box, live_md, final_tbl, footer])
 
     with gr.Tab("Most cited cases"):
         gr.Markdown("### Top 20 by in-degree in the citation graph")
